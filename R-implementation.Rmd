@@ -1,0 +1,54 @@
+
+<!------------ Function Proposal -------------->
+
+```{r create_function}
+calculate_weighted_average <- function(data_frame_input, verbose=FALSE, weight_of_most_recent_GPA = 3, weight_of_second_most_recent_GPA = 2) {
+  if (ncol({{ data_frame_input }}) > 3) {
+    warning("Truncating dataframe to have most recent three years...")
+    truncated_df  <- {{ data_frame_input }}[,(ncol({{ data_frame_input }})-2):ncol({{ data_frame_input }})]
+  } else if (ncol({{ data_frame_input }}) < 2) {
+    stop("You have than the acceptable number of years to apply to Medical school. Consider applying in the future...")
+  }
+  
+  ## Weight second most recent year of GPA as x2, and most recent year of GPA as x3
+  truncated_df[,2] <- {{ truncated_df[,2] }} * {{ weight_of_second_most_recent_GPA }}
+  truncated_df[,3] <- {{ truncated_df[,3] }} * {{ weight_of_most_recent_GPA }} 
+
+  ## get the n needed for means by summing over all the columns
+  weighted_val <- sum(!is.na(truncated_df[,1])) + sum(!is.na(truncated_df[,2])) * {{ weight_of_second_most_recent_GPA }} + sum(!is.na(truncated_df[,3])) * {{ weight_of_most_recent_GPA }}
+  
+  if (verbose == TRUE){
+    message(cat("\nThe total weighted value of the values are ",weighted_val))
+  }
+    
+  ## sum the values in the columns and return the output
+  return ((sum(truncated_df[,1],na.rm = TRUE)+sum(truncated_df[,2],na.rm = TRUE)+sum(truncated_df[,3],na.rm = TRUE))/weighted_val)
+}
+```
+
+<!------------ Unit Testing --------------->
+
+
+First let's generate two datasets. One with NA and one without NA. 
+```{r test_function_no_NA}
+test_df_noNA <- data.frame("Year1" = c(4,4,4,4,4), "Year2" = c(4,3.7,3.3,3.7,4), "Year3" = c(4,2.7,2.7,2.7,3), "Year4" = c(2.7,3.7,4,3.3,3.3))
+```
+
+```{r test_function_with_NA}
+test_df_withNA <- data.frame("Year1" = c(4,4,NA,4,4), "Year2" = c(4,NA,3.3,NA,4), "Year3" = c(4,2.7,2.7,2.7,3), "Year4" = c(2.7,3.7,NA,3.3,3.3))
+```
+
+Now let's test.
+```{r testthat}
+library("testthat")
+```
+```{r run_test_without_NA}
+test_that("test using dataset without NA", {
+  expect_equal(calculate_weighted_average(test_df_noNA, verbose=TRUE), 3.33)
+  expect_equal(calculate_weighted_average(test_df_withNA, verbose=TRUE)
+, 3.22)
+})
+```
+
+<!---------------------------------------------------------->
+
